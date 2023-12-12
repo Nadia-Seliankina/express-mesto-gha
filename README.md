@@ -7,13 +7,10 @@
 `/controllers` — папка с файлами контроллеров пользователя и карточки   
 `/models` — папка с файлами описания схем пользователя и карточки  
   
-Остальные директории вспомогательные, создаются при необходимости разработчиком
-
 ## Запуск проекта
 
 `npm run start` — запускает сервер   
 `npm run dev` — запускает сервер с hot-reload
-
 
 **Описание**
 
@@ -21,7 +18,9 @@
 
 **Технологии**
 
-* Работа с базами данных
+* Node.js
+* Express.js
+* Работа с базами данных. NoSQL MongoDB.
 * Безопасность и тестирование
 * Развертывание бэкенда на удалённой машине
 
@@ -33,7 +32,7 @@
 * Сохранение в память, когда кто-то поставил лайк или передумал и убрал его
 
 **Планы**
-* "dev": "nodemon --experimental-modules --es-module-specifier-resolution=node --trace-warnings --inspect -- index.js"
+* -
 
 **Ссылка на проект**
-https://nadia-seliankina.github.io/mesto-react/index.html
+https://github.com/Nadia-Seliankina/express-mesto-gha

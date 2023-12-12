@@ -1,103 +1,89 @@
+// Здесь функциональность точки входа
+
+import express, { json } from 'express'; // подключаем express
+import mongoose from 'mongoose';
+import 'dotenv/config'; // подключать над роутами
+
 // const fs = require('fs');
-// const path = require('path');
+// import path from 'path';
 
-// const http = require('http'); // Подключим API
-
-// подключите express
-const express = require('express');
-
-// импорт модулей
-// const utils = require('./utils');
-// const helpers = require('../../helpers');
-// const { someFunction, someValue } = require('./utils');
-// const { getMainPage, postForm } = require('./routes');
+// импортируем роутер
+// import router from './routes';
+import router from './routes/index';
 
 // BASE_PATH — это URL сервера. Он хранится в переменных окружения
 // const { PORT = 3000, BASE_PATH  } = process.env;
-const { PORT = 3000 } = process.env;
+// const { PORT=3000, MONGO_URL = 'mongodb://127.0.0.1:27017/mestodb' } = process.env;
+const { PORT, MONGO_URL } = process.env;
 
-// создайте приложение методом express
+// создаём приложение методом express
 const app = express();
 
-// создаём сервер
-// const server = http.createServer(router);
-// const server = http.createServer((req, res) => {
-// устанавливаем ответ
-// console.log('Пришёл запрос!');
+// раздача статики
+// если мидлвар для любых маршрутов первый аргумент можно опустить
+// app.use(express.static('/' + '/public'));
 
-// console.log(req.url); // /hello
-// console.log(req.method); // GET
-// console.log(req.headers); // здесь будут заголовки запроса
-// console.log(req.body); // а здесь тело запроса, но у GET запроса его нет
+// const __dirname = path.resolve();
+// app.use(express.static(path.join(__dirname, 'public')));
+// теперь клиент имеет доступ только к публичным файлам
 
-// res.statusMessage = 'OK'; // сообщение ответа
-// статус ответа, добавить ответу заголовок
-// res.writeHead(200, {
-// 'Content-Type': 'text/html; charset=utf8'
-// });
+// мидлвар для получения body (синхронная операция обработка body на сервере)
+// Обогащает объект req.body
+app.use(json());
 
-// res.write('Hello, '); // отправить часть ответа — строку "Hello, "
-// res.write('world!'); // отправить часть ответа — строку "world!"
+// подключаемся к серверу mongo
+// mongoose.connect('mongodb://127.0.0.1:27017/mestodb');
+// mongoose.connect(MONGO_URL, () =>
+// console.log('База подключена')
+// );
+mongoose.connect(MONGO_URL);
 
-// res.end('<h1>Привет, мир!</h1>', 'utf8');
-// закончить отправку ответа, в методе end тоже можно передать данные
-// res.end(markup);
+// мидлвэр
+// временное решение авторизации - добавляет в каждый запрос объект user
+app.use((req, res, next) => {
+  req.user = {
+    _id: '656b2d07d537f1b32a54d8e1',
+  };
 
-// чтобы страница приходила только на GET запросы к URL главной страницы (просто слеш /)
-// if (req.url === '/' && req.method === 'GET') {
-// res.writeHead(200, {
-// 'Content-Type': 'text/html'
-// });
+  next();
+});
 
-// res.end(mainPageMarkup);
+// мидлвар на авторизацию, обогащает реквест пользователем
+// логирование или аутентификацию пользователя, расширить объект данными
 
-// getMainPage(req, res);
+// Вынесём отправку ответа в отдельную функцию
+// const sendUser = (req, res) => {
+// const { name, age } = users[req.params.id];
+// res.send(`Пользователь ${name}, ${age} лет`);
 // };
 
-// Чтобы страница приходила при отправке формы
-// if (req.url === '/submit' && req.method === 'POST') {
-// сервер должен записывать данные
-// let body = '';
-
-// req.on('data', (chunk) => {
-// body += chunk;
-// });
-
-// req.on('end', () => {
-// res.writeHead(200, {
-// 'Content-Type': 'text/html'
-// });
-
-// res.end(submitSuccessMarkup);
-
-// postForm(req, res);
-// });
-
-// const server = http.createServer((req, res) => {
-// const dataPath = path.join(__dirname, 'data.json');
-
-// fs.readFile(dataPath, { encoding: 'utf8' }, (err, data) => {
-// if (err) {
-// console.log(err);
-// return;
+// Проверим, существует ли пользователь:
+// const doesUserExist = (req, res, next) => {
+// if (!users[req.params.id]) {
+// res.send(`Такого пользователя не существует`);
+// return; // если пользователя нет, мы выйдем из функции и больше ничего происходить не будет
 // }
 
-// const songs = JSON.parse(data);
+// next();
+// если движок дошёл до функции next, он будет искать следующий обработчик того же запроса
+// };
 
-// res.writeHead(200, {
-// 'Content-Type': 'text/html'
-// });
+// const sendUser = (req, res, next) => {
+// res.send(users[req.params.id]);
+// };
 
-// const markup = generateMainView(songs);
+// Если пользователь найден, вызовем функцию, переданную третьим аргументом.
+// Осталось написать обработчик запроса
+// router.get('/users/:id', doesUserExist);
+// мидлвэр, чтобы проверять уровень доступа пользователя
+// router.get('/users/:id', doesUserHavePermission);
+// Просто добавили обработчик, не трогая код других мидлвэров
+// router.get('/users/:id', sendUser);
 
-// res.end(markup);
-// });
+// запускаем router
+app.use(router);
 
-// });
-
-// });
-
-// app.listen(PORT); // будем принимать сообщения с PORT
+// будем принимать сообщения с PORT
 app.listen(PORT, () => {
   // Если всё работает, консоль покажет, какой порт приложение слушает
   console.log(`App listening on port ${PORT}`);
@@ -115,5 +101,3 @@ app.listen(PORT, () => {
 
 // Именно так мы укажем порт — при запуске сервера:
 // PORT=3000 node app.js
-
-// <form class="container" action="${BASE_PATH}/submit" method="POST" enctype="text/plain">
