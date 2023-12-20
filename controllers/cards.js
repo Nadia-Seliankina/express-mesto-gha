@@ -1,3 +1,5 @@
+import { constants } from 'http2';
+
 import Card from '../models/card';
 import { NotFoundError } from '../utils/NotFoundError';
 
@@ -6,7 +8,7 @@ export const getCards = async (req, res) => {
     const users = await Card.find({});
     return res.send(users);
   } catch (error) {
-    return res.status(500).send({
+    return res.status(constants.HTTP_STATUS_INTERNAL_SERVER_ERROR).send({
       message: 'Ошибка на стороне сервера',
       // error: error.message
       // не показывать, чтобы не помогать злоумышленникам
@@ -27,7 +29,7 @@ export const getCards = async (req, res) => {
 // вернём записанные в базу данные
 // .then(card => res.send({ data: card }))
 // данные не записались, вернём ошибку
-// .catch(err => res.status(500).send({ message: 'Произошла ошибка' }));
+// .catch(err => res.status(HTTP_STATUS_SERVER_ERROR).send({ message: 'Произошла ошибка' }));
 // };
 
 export const createCard = async (req, res) => {
@@ -40,18 +42,18 @@ export const createCard = async (req, res) => {
 
     const newCard = await Card.create(req.body);
 
-    return res.status(201).send(newCard);
+    return res.status(constants.HTTP_STATUS_CREATED).send(newCard);
   } catch (error) {
     if (error.name === 'ValidationError') {
       return res
-        .status(400)
+        .status(constants.HTTP_STATUS_BAD_REQUEST)
         .send({
           message: 'Переданы некорректные данные при создании карточки',
           error: error.message,
         });
     }
 
-    return res.status(500).send({
+    return res.status(constants.HTTP_STATUS_INTERNAL_SERVER_ERROR).send({
       message: 'Ошибка на стороне сервера',
       // error: error.message // не показывать, чтобы не помогать злоумышленникам
     });
@@ -69,7 +71,16 @@ export const deleteCard = async (req, res) => {
       return res.status(error.statusCode).send({ message: error.message });
     }
 
-    return res.status(500).send({
+    if (error.name === 'CastError') {
+      return res
+        .status(constants.HTTP_STATUS_BAD_REQUEST)
+        .send({
+          message: 'Передан невалидный ID.',
+          error: error.message,
+        });
+    }
+
+    return res.status(constants.HTTP_STATUS_INTERNAL_SERVER_ERROR).send({
       message: 'Ошибка на стороне сервера',
       // error: error.message // не показывать, чтобы не помогать злоумышленникам
     });
@@ -93,14 +104,14 @@ export const likeCard = async (req, res) => {
 
     if (error.name === 'CastError') {
       return res
-        .status(400)
+        .status(constants.HTTP_STATUS_BAD_REQUEST)
         .send({
           message: 'Переданы некорректные данные для постановки лайка.',
           error: error.message,
         });
     }
 
-    return res.status(500).send({
+    return res.status(constants.HTTP_STATUS_INTERNAL_SERVER_ERROR).send({
       message: 'Ошибка на стороне сервера',
       // error: error.message // не показывать, чтобы не помогать злоумышленникам
     });
@@ -123,14 +134,14 @@ export const dislikeCard = async (req, res) => {
 
     if (error.name === 'CastError') {
       return res
-        .status(400)
+        .status(constants.HTTP_STATUS_BAD_REQUEST)
         .send({
           message: 'Переданы некорректные данные для снятии лайка.',
           error: error.message,
         });
     }
 
-    return res.status(500).send({
+    return res.status(constants.HTTP_STATUS_INTERNAL_SERVER_ERROR).send({
       message: 'Ошибка на стороне сервера',
       // error: error.message // не показывать, чтобы не помогать злоумышленникам
     });
