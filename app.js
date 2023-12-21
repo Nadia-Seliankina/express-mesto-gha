@@ -2,6 +2,7 @@
 
 import express, { json } from 'express'; // подключаем express
 import mongoose from 'mongoose';
+import { constants } from 'http2';
 import 'dotenv/config'; // подключать над роутами
 
 // const fs = require('fs');
@@ -82,6 +83,15 @@ app.use((req, res, next) => {
 
 // запускаем router
 app.use(router);
+
+// При запросах по несуществующим маршрутам
+app.use('*', (req, res) => {
+  res.status(constants.HTTP_STATUS_NOT_FOUND).send({
+    message: '404. Страница не найдена.',
+    // error: error.message
+    // не показывать, чтобы не помогать злоумышленникам
+  });
+});
 
 // будем принимать сообщения с PORT
 app.listen(PORT, () => {
