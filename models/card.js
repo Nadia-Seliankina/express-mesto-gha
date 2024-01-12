@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import { UrlRegEx } from '../utils/UrlRegEx';
 
 const cardSchema = new mongoose.Schema(
   {
@@ -16,6 +17,10 @@ const cardSchema = new mongoose.Schema(
       required: {
         value: true,
         message: 'Здесь должна быть ссылка',
+      },
+      validate: {
+        validator: (v) => UrlRegEx.test(v),
+        message: 'Дана некорректная ссылка',
       },
     },
     // создаём поле владельца карточки

@@ -1,7 +1,9 @@
+import { constants } from 'http2';
+
 export class ConflictError extends Error {
   constructor(message) {
     super(message);
     this.name = 'ConflictError';
-    this.statusCode = 409;
+    this.statusCode = constants.HTTP_STATUS_CONFLICT; // 409
   }
 }

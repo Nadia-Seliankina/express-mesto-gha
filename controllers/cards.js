@@ -1,93 +1,104 @@
 import { constants } from 'http2';
-
 import Card from '../models/card';
 import { NotFoundError } from '../utils/NotFoundError';
+import { ForbiddenError } from '../utils/ForbiddenError';
 
-export const getCards = async (req, res) => {
+/* eslint consistent-return: "off" */
+export const getCards = async (req, res, next) => {
   try {
     const users = await Card.find({});
     return res.send(users);
   } catch (error) {
-    return res.status(constants.HTTP_STATUS_INTERNAL_SERVER_ERROR).send({
-      message: 'Ошибка на стороне сервера',
-      // error: error.message
-      // не показывать, чтобы не помогать злоумышленникам
-    });
+    // return res.status(constants.HTTP_STATUS_INTERNAL_SERVER_ERROR).send({
+    // message: 'Ошибка на стороне сервера',
+    // error: error.message
+    // не показывать, чтобы не помогать злоумышленникам
+    // });
+    next(error);
   }
 };
 
-// export const createCard = (req, res) => {
-// мидлвэр добавляет в каждый запрос объект user.
-// Берите из него идентификатор пользователя в контроллере создания карточки:
-// console.log(req.user._id); // _id станет доступен
-// Это временное решение. Мы захардкодили идентификатор пользователя,
-// поэтому кто бы ни создал карточку, в базе у неё будет один и тот же автор.
-
-// const { name, link, ownerId } = req.body; // получим из объекта запроса имя и ссылку карточки
-
-// Card.create({ name, link, owner: ownerId}) // создадим документ на основе пришедших данных
-// вернём записанные в базу данные
-// .then(card => res.send({ data: card }))
-// данные не записались, вернём ошибку
-// .catch(err => res.status(HTTP_STATUS_SERVER_ERROR).send({ message: 'Произошла ошибка' }));
-// };
-
-export const createCard = async (req, res) => {
+export const createCard = async (req, res, next) => {
   try {
-    // мидлвэр добавляет в каждый запрос объект user.
-    // Берите из него идентификатор пользователя в контроллере создания карточки:
-    console.log(req.user._id); // _id станет доступен
-    // Это временное решение. Мы захардкодили идентификатор пользователя,
-    // поэтому кто бы ни создал карточку, в базе у неё будет один и тот же автор.
+    // мидлвэр auth добавляет в каждый запрос объект user.
+    // Берите из него идентификатор пользователя в контроллере создания карточки
+    console.log('card', req.user._id); // _id станет доступен
 
-    const newCard = await Card.create(req.body);
+    const ownerId = req.user._id;
+
+    const {
+      name, link,
+    } = req.body;
+
+    // const newCard = await Card.create(req.body);
+
+    const newCard = await Card.create({
+      name, link, owner: ownerId,
+    });
 
     return res.status(constants.HTTP_STATUS_CREATED).send(newCard);
   } catch (error) {
-    if (error.name === 'ValidationError') {
-      return res
-        .status(constants.HTTP_STATUS_BAD_REQUEST)
-        .send({
-          message: 'Переданы некорректные данные при создании карточки',
-          error: error.message,
-        });
-    }
+    // if (error.name === 'ValidationError') {
+    // return res
+    // .status(constants.HTTP_STATUS_BAD_REQUEST)
+    // .send({
+    // message: 'Переданы некорректные данные при создании карточки',
+    // error: error.message,
+    // });
+    // }
 
-    return res.status(constants.HTTP_STATUS_INTERNAL_SERVER_ERROR).send({
-      message: 'Ошибка на стороне сервера',
-      // error: error.message // не показывать, чтобы не помогать злоумышленникам
-    });
+    // return res.status(constants.HTTP_STATUS_INTERNAL_SERVER_ERROR).send({
+    // message: 'Ошибка на стороне сервера',
+    // error: error.message // не показывать, чтобы не помогать злоумышленникам
+    // });
+
+    next(error);
   }
 };
 
-export const deleteCard = async (req, res) => {
+export const deleteCard = async (req, res, next) => {
   try {
     const { cardId } = req.params;
-    const card = await Card.findByIdAndDelete(cardId).orFail(() => new NotFoundError('Карточка по указанному _id не найдена'));
+    const card = await Card.findById(cardId).orFail(() => new NotFoundError('Карточка по указанному _id не найдена'));
+
+    if (card.owner.toString() !== req.user._id) {
+      throw new ForbiddenError('Недостаточно прав');
+    }
+
+    await Card.deleteOne(card);
+
+    // const card = await Card.findByIdAndDelete(cardId)
+    // .orFail(() => new NotFoundError('Карточка по указанному _id не найдена'));
 
     return res.send(card);
   } catch (error) {
-    if (error.name === 'NotFoundError') {
-      return res.status(error.statusCode).send({ message: error.message });
-    }
+    // if (error.name === 'NotFoundError') {
+    // return res.status(error.statusCode).send({ message: error.message });
+    // }
 
-    if (error.name === 'CastError') {
-      return res
-        .status(constants.HTTP_STATUS_BAD_REQUEST)
-        .send({
-          message: 'Передан невалидный ID.',
-          error: error.message,
-        });
-    }
+    // if (error.name === 'CastError') {
+    // return res
+    // .status(constants.HTTP_STATUS_BAD_REQUEST)
+    // .send({
+    // message: 'Передан невалидный ID.',
+    // error: error.message,
+    // });
+    // }
 
-    return res.status(constants.HTTP_STATUS_INTERNAL_SERVER_ERROR).send({
-      message: 'Ошибка на стороне сервера',
-      // error: error.message // не показывать, чтобы не помогать злоумышленникам
-    });
+    // if (error.message === 'ForbiddenDelete') {
+    // return res.status(constants.HTTP_STATUS_FORBIDDEN).send({ message: error.message });
+    // }
+
+    // return res.status(constants.HTTP_STATUS_INTERNAL_SERVER_ERROR).send({
+    // message: 'Ошибка на стороне сервера',
+    // error: error.message // не показывать, чтобы не помогать злоумышленникам
+    // });
+
+    next(error);
   }
 };
 
-export const likeCard = async (req, res) => {
+export const likeCard = async (req, res, next) => {
   try {
     const { cardId } = req.params;
     const card = await Card.findByIdAndUpdate(
@@ -98,27 +109,29 @@ export const likeCard = async (req, res) => {
 
     return res.send(card);
   } catch (error) {
-    if (error.name === 'NotFoundError') {
-      return res.status(error.statusCode).send({ message: error.message });
-    }
+    // if (error.name === 'NotFoundError') {
+    // return res.status(error.statusCode).send({ message: error.message });
+    // }
 
-    if (error.name === 'CastError') {
-      return res
-        .status(constants.HTTP_STATUS_BAD_REQUEST)
-        .send({
-          message: 'Переданы некорректные данные для постановки лайка.',
-          error: error.message,
-        });
-    }
+    // if (error.name === 'CastError') {
+    // return res
+    // .status(constants.HTTP_STATUS_BAD_REQUEST)
+    // .send({
+    // message: 'Переданы некорректные данные для постановки лайка.',
+    // error: error.message,
+    // });
+    // }
 
-    return res.status(constants.HTTP_STATUS_INTERNAL_SERVER_ERROR).send({
-      message: 'Ошибка на стороне сервера',
-      // error: error.message // не показывать, чтобы не помогать злоумышленникам
-    });
+    // return res.status(constants.HTTP_STATUS_INTERNAL_SERVER_ERROR).send({
+    // message: 'Ошибка на стороне сервера',
+    // error: error.message // не показывать, чтобы не помогать злоумышленникам
+    // });
+
+    next(error);
   }
 };
 
-export const dislikeCard = async (req, res) => {
+export const dislikeCard = async (req, res, next) => {
   try {
     const { cardId } = req.params;
     const card = await Card.findByIdAndUpdate(
@@ -128,22 +141,24 @@ export const dislikeCard = async (req, res) => {
     ).orFail(() => new NotFoundError('Передан несуществующий _id карточки'));
     return res.send(card);
   } catch (error) {
-    if (error.name === 'NotFoundError') {
-      return res.status(error.statusCode).send({ message: error.message });
-    }
+    // if (error.name === 'NotFoundError') {
+    // return res.status(error.statusCode).send({ message: error.message });
+    // }
 
-    if (error.name === 'CastError') {
-      return res
-        .status(constants.HTTP_STATUS_BAD_REQUEST)
-        .send({
-          message: 'Переданы некорректные данные для снятии лайка.',
-          error: error.message,
-        });
-    }
+    // if (error.name === 'CastError') {
+    // return res
+    // .status(constants.HTTP_STATUS_BAD_REQUEST)
+    // .send({
+    // message: 'Переданы некорректные данные для снятии лайка.',
+    // error: error.message,
+    // });
+    // }
 
-    return res.status(constants.HTTP_STATUS_INTERNAL_SERVER_ERROR).send({
-      message: 'Ошибка на стороне сервера',
-      // error: error.message // не показывать, чтобы не помогать злоумышленникам
-    });
+    // return res.status(constants.HTTP_STATUS_INTERNAL_SERVER_ERROR).send({
+    // message: 'Ошибка на стороне сервера',
+    // error: error.message // не показывать, чтобы не помогать злоумышленникам
+    // });
+
+    next(error);
   }
 };

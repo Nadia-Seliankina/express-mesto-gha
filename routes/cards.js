@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { celebrate, Joi } from 'celebrate';
 import {
   createCard,
   deleteCard,
@@ -11,13 +12,38 @@ const cardRouter = Router(); // создали роутер
 
 cardRouter.get('/', getCards);
 
-cardRouter.post('/', createCard);
+// // Если тело запроса не пройдёт валидацию, контроллер createCard вообще не запустится
+cardRouter.post('/', celebrate({
+  body: Joi.object().keys({
+    name: Joi.string().required().min(2).max(30),
+    link: Joi.string().required(),
+  }).unknown(true),
+}), createCard);
 
-cardRouter.delete('/:cardId', deleteCard);
+cardRouter.delete(
+  '/:cardId',
+  celebrate({
+    // валидируем параметры
+    params: Joi.object().keys({
+      cardId: Joi.string().alphanum().length(24),
+    }).unknown(true),
+  }),
+  deleteCard,
+);
 
-cardRouter.put('/:cardId/likes', likeCard);
+cardRouter.put('/:cardId/likes', celebrate({
+  // валидируем параметры
+  params: Joi.object().keys({
+    cardId: Joi.string().alphanum().length(24),
+  }).unknown(true),
+}), likeCard);
 
-cardRouter.delete('/:cardId/likes', dislikeCard);
+cardRouter.delete('/:cardId/likes', celebrate({
+  // валидируем параметры
+  params: Joi.object().keys({
+    cardId: Joi.string().alphanum().length(24),
+  }).unknown(true),
+}), dislikeCard);
 
 export default cardRouter; // экспортировали роутер
 
