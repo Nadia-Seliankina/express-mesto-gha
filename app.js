@@ -2,7 +2,6 @@
 
 import express, { json } from 'express'; // подключаем express
 import mongoose from 'mongoose';
-import { constants } from 'http2';
 // import cors from 'cors';
 import 'dotenv/config'; // подключать переменные окружения над роутами
 import * as dotenv from 'dotenv';
@@ -21,8 +20,8 @@ dotenv.config();
 
 // BASE_PATH — это URL сервера. Он хранится в переменных окружения
 // const { PORT = 3000, BASE_PATH  } = process.env;
-// const { PORT=3000, MONGO_URL = 'mongodb://127.0.0.1:27017/mestodb' } = process.env;
-const { PORT, MONGO_URL } = process.env;
+const { PORT = 3000, MONGO_URL = 'mongodb://127.0.0.1:27017/mestodb' } = process.env;
+// const { PORT, MONGO_URL } = process.env;
 
 // создаём приложение методом express
 const app = express();
@@ -47,15 +46,6 @@ mongoose.connect(MONGO_URL);
 
 // запускаем router
 app.use(router);
-
-// При запросах по несуществующим маршрутам
-app.use('*', (req, res) => {
-  res.status(constants.HTTP_STATUS_NOT_FOUND).send({
-    message: '404. Страница не найдена.',
-    // error: error.message
-    // не показывать, чтобы не помогать злоумышленникам
-  });
-});
 
 app.use(errors()); // обработчик ошибок celebrate
 

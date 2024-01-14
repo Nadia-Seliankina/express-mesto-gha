@@ -1,9 +1,9 @@
 // здесь обрабатываем все ошибки
 import { constants } from 'http2';
-import { NotFoundError } from './NotFoundError';
-import { BadRequestError } from './BadRequestError';
-import { UnauthorizedError } from './UnauthorizedError';
-import { ForbiddenError } from './ForbiddenError';
+import { NotFoundError } from '../errors/NotFoundError';
+import { BadRequestError } from '../errors/BadRequestError';
+import { UnauthorizedError } from '../errors/UnauthorizedError';
+import { ForbiddenError } from '../errors/ForbiddenError';
 
 const MONGO_DUBLICATE_ERROR_CODE = 11000;
 
@@ -23,15 +23,8 @@ export const handleErrors = ((err, req, res, next) => {
         .send({ message: 'Ошибка соединения с базой данных' });
   }
 
-  if (err instanceof NotFoundError) {
-    return res.status(err.statusCode).send({ message: err.message });
-  }
-
-  if (err instanceof UnauthorizedError) {
-    return res.status(err.statusCode).send({ message: err.message });
-  }
-
-  if (err instanceof ForbiddenError) {
+  if (err instanceof NotFoundError || err instanceof UnauthorizedError
+    || err instanceof ForbiddenError) {
     return res.status(err.statusCode).send({ message: err.message });
   }
 

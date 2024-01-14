@@ -1,36 +1,26 @@
 import mongoose from 'mongoose';
 import isEmail from 'validator/lib/isEmail';
+import bcrypt from 'bcrypt';
 import { UrlRegEx } from '../utils/UrlRegEx';
+import { UnauthorizedError } from '../errors/UnauthorizedError';
 
 const userSchema = new mongoose.Schema(
   {
     name: {
       type: String,
       unique: true,
-      // required: {
-      // value: true,
-      // message: 'Поле name является обязательным',
-      // },
       default: 'Жак-Ив Кусто',
       minlength: [2, 'Минимальная длина 2 символа'],
       maxlength: [30, 'Максимальная длина 30 символов'],
     },
     about: {
       type: String,
-      // required: {
-      // value: true,
-      // message: 'Поле about является обязательным',
-      // },
       default: 'Исследователь',
       minlength: [2, 'Минимальная длина 2 символа'],
       maxlength: [30, 'Максимальная длина 30 символов'],
     },
     avatar: {
       type: String,
-      // required: {
-      // value: true,
-      // message: 'Здесь должна быть ссылка',
-      // },
       validate: {
         validator: (v) => UrlRegEx.test(v),
         message: 'Дана некорректная ссылка',
@@ -55,7 +45,6 @@ const userSchema = new mongoose.Schema(
         value: true,
         message: 'Поле password является обязательным',
       },
-      minlength: [8, 'Минимальная длина 8 символов'],
       // при поиске сущности не будет включаться в результат поиска, не светить пароль
       select: false,
     },
@@ -63,25 +52,29 @@ const userSchema = new mongoose.Schema(
   { versionKey: false, timestamps: true },
 );
 
-// улучшим код: сделаем код проверки почты и пароля частью схемы User
-// userSchema.statics.findUserByCredentials = function (email, password) {
-// return this.findOne({ email }) // this — это модель User
-// .then((user) => {
-// не нашёлся — отклоняем промис
-// if (!user) {
-// return Promise.reject(new Error('Неправильные почта или пароль'));
+// сделаем код проверки почты и пароля частью схемы User
+// userSchema.statics.findUserByCredentials = async function (email, password, next) {
+// try {
+// поискать пользователя с полученной почтой в базе
+// const userLogin = await this.findOne({ email }) // this — это модель User
+// .select('+password');
+// .orFail(next(new UnauthorizedError('Неправильные почта или пароль')));
+// if (!userLogin) {
+// throw new UnauthorizedError('Неправильные почта или пароль');
+// return next(new UnauthorizedError('Неправильные почта или пароль'));
 // }
-
-// нашёлся — сравниваем хеши
-// return bcrypt.compare(password, user.password)
-// .then((matched) => {
+// сравниваем переданный пароль и хеш из базы
+// const matched = await bcrypt.compare(password, userLogin.password);
+// хеши не совпали — отклоняем промис
 // if (!matched) {
-// return Promise.reject(new Error('Неправильные почта или пароль'));
+// throw new UnauthorizedError('Неправильные почта или пароль');
+// return next(new UnauthorizedError('Неправильные почта или пароль'));
 // }
 
-// return user; // теперь user доступен
-// });
-// });
+// return userLogin; // теперь user доступен
+// } catch (error) {
+// next(error);
+// }
 // };
 
 // создаём модель и экспортируем её
